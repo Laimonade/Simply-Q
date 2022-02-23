@@ -112,21 +112,9 @@ void SimplyQueueAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Using helper function of the struct getChainSettings
     auto chainSettings = getChainSettings(apvts);
     
-    // Produce coefficients from the IIR DSP class for the GUI user helper function chainSettings
-    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, chainSettings.peakFreq, chainSettings.peakQuality, juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
-    
+    // Updsting the peak filter coefficients
+    updatePeakFilter(chainSettings);
 
-    // ------------------------------------------------------------------------------------
-    // Access peak filter link and assign some coefficients
-    // PeakCoefficient object is a Reference-counted wrapper of an array allocated on the heap.
-    // To copy its values, we need to dereference it as it's a pointer.
-    // Allocation on the heap in an audio callback is BAD
-    // ------------------------------------------------------------------------------------
-
-    // Accessing each individual links in a the chain of filter.
-    // Index in chain represent each filter
-    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
-    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
 
     // Creates 1 IIR filter coefficient object for every 2 orders
     // If 12db selected = order of 2 (1 coefficient), If 48db selected = order of 8 (4 coefficients = 4 filter of 12db activated)
@@ -295,13 +283,7 @@ void SimplyQueueAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     // Using helper function of the struct getChainSettings
     auto chainSettings = getChainSettings(apvts);
     
-    // Produce coefficients from the IIR DSP class for the GUI user helper function chainSettings
-    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), chainSettings.peakFreq, chainSettings.peakQuality, juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
-
-    // Accessing each individual links in a the chain of filter.
-    // Index in chain represent each filter
-    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
-    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    updatePeakFilter(chainSettings);
     
     
     auto cutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
@@ -494,6 +476,37 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
 
     return settings;
 }
+
+void SimplyQueueAudioProcessor::updatePeakFilter(const ChainSettings& chainSettings)
+{
+    
+    // Produce coefficients from the IIR DSP class for the GUI user helper function chainSettings
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(),
+                                                                                chainSettings.peakFreq,
+                                                                                chainSettings.peakQuality,
+                                                                                juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
+    
+    // ------------------------------------------------------------------------------------
+    // Access peak filter link and assign some coefficients
+    // PeakCoefficient object is a Reference-counted wrapper of an array allocated on the heap.
+    // To copy its values, we need to dereference it as it's a pointer.
+    // Allocation on the heap in an audio callback is BAD
+    // ------------------------------------------------------------------------------------
+
+    // Accessing each individual links in a the chain of filter.
+    // Index in chain represent each filter
+//    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+//    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    updateCoefficients(leftChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
+    updateCoefficients(rightChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
+}
+
+// Getting the coefficients from above (left/rightChain.get), so we dereference
+void SimplyQueueAudioProcessor::updateCoefficients(Coefficients& old, const Coefficients& replacements)
+{
+    *old = *replacements;
+}
+
 
 juce::AudioProcessorValueTreeState::ParameterLayout SimplyQueueAudioProcessor::createParameterLayout()
 {
