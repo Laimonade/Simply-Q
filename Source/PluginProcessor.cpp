@@ -108,6 +108,29 @@ void SimplyQueueAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     
     leftChain.prepare(spec);
     rightChain.prepare(spec);
+    
+    // Using helper function of the struct getChainSettings
+    auto chainSettings = getChainSettings(apvts);
+    
+    // Produce coefficients from the IIR DSP class for the GUI user helper function chainSettings
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, chainSettings.peakFreq, chainSettings.peakQuality, juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
+    
+
+    // ------------------------------------------------------------------------------------
+    // Access peak filter link and assign some coefficients
+    // PeakCoefficient object is a Reference-counted wrapper of an array allocated on the heap.
+    // To copy its values, we need to dereference it as it's a pointer.
+    // Allocation on the heap in an audio callback is BAD
+    // ------------------------------------------------------------------------------------
+
+    // Accessing each individual links in a the chain of filter.
+    // Index in chain represent each filter
+    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+
+    
+    
+    
 }
 
 void SimplyQueueAudioProcessor::releaseResources()
@@ -157,6 +180,21 @@ void SimplyQueueAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    // ---------------------- Updating Peak Parameters from GUI ---------------------------
+    //                 Check 'PrepareToPlay' for same code with explaination
+    // ------------------------------------------------------------------------------------
+    
+    // Using helper function of the struct getChainSettings
+    auto chainSettings = getChainSettings(apvts);
+    
+    // Produce coefficients from the IIR DSP class for the GUI user helper function chainSettings
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), chainSettings.peakFreq, chainSettings.peakQuality, juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
+
+    // Accessing each individual links in a the chain of filter.
+    // Index in chain represent each filter
+    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
     // Make sure to reset the state if your inner loop is processing
@@ -216,6 +254,21 @@ void SimplyQueueAudioProcessor::setStateInformation (const void* data, int sizeI
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+// Getting the parameter's values using the ChainSettings structure
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
+{
+    ChainSettings settings;
+    settings.lowCutFreq = apvts.getRawParameterValue("Low-Cut Freq")->load();
+    settings.highCutFreq = apvts.getRawParameterValue("High-Cut Freq")->load();
+    settings.peakFreq = apvts.getRawParameterValue("Peak Freq")->load();
+    settings.peakGainInDecibels = apvts.getRawParameterValue("Peak Gain")->load();
+    settings.peakQuality = apvts.getRawParameterValue("Peak Q")->load();
+    settings.lowCutSlope = apvts.getRawParameterValue("Low-Cut Slope")->load();
+    settings.highCutSlope = apvts.getRawParameterValue("High-Cut Slope")->load();
+
+    return settings;
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout SimplyQueueAudioProcessor::createParameterLayout()

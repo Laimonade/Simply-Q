@@ -3,5 +3,6 @@
 JuceLibraryCode/
 Builds/
 SimplyQueue-Testing.filtergraph
+Symply-Q Test.filtergraph
 .DS_Store
 .gitignore

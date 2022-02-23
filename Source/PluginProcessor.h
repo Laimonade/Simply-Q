@@ -10,6 +10,19 @@
 
 #include <JuceHeader.h>
 
+
+//==============================================================================
+// Parameters from parameterValueTreeState
+struct ChainSettings
+{
+    float peakFreq {0}, peakGainInDecibels {0}, peakQuality {1.0f};
+    float lowCutFreq {0}, highCutFreq {0};
+    int lowCutSlope {0}, highCutSlope {0};
+};
+
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
+
+
 //==============================================================================
 /**
 */
@@ -57,7 +70,7 @@ public:
     // ======================== ADDED =============================================
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout(); // Static as it doesn't use any member variable
     
-    juce::AudioProcessorValueTreeState apvst {*this, nullptr, "Parameters", createParameterLayout()}; //Binding GUI control to the DSP in processor
+    juce::AudioProcessorValueTreeState apvts {*this, nullptr, "Parameters", createParameterLayout()}; //Binding GUI control to the DSP in processor
 private:
     
     using Filter = juce::dsp::IIR::Filter<float>; // Creating a juce dsp filter 'type alias'
@@ -74,6 +87,15 @@ private:
     
     // Creating 2 mono chain for stereo processing
     MonoChain leftChain, rightChain;
+    
+    // Enum representing each filter in the chain. Goes along with the MonoChain above defining each:
+    // cut filter, filter, cut filter
+    enum ChainPositions
+    {
+        LowCut,
+        Peak,
+        HighCut
+    };
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimplyQueueAudioProcessor)
