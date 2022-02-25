@@ -23,7 +23,7 @@ enum SlopeSettings
 };
 
 
-
+// Extracting parameters of apvts, data structure representing all parameters values
 // Parameters from parameterValueTreeState
 struct ChainSettings
 {
@@ -34,6 +34,7 @@ struct ChainSettings
     SlopeSettings lowCutSlope {SlopeSettings::Slope_12}, highCutSlope {SlopeSettings::Slope_12};
 };
 
+// Helper function giving all the values to the data struct above
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
 
 

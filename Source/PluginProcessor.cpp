@@ -112,7 +112,7 @@ void SimplyQueueAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Using helper function of the struct getChainSettings
     auto chainSettings = getChainSettings(apvts);
     
-    // Updsting the peak filter coefficients
+    // Updating the peak filter coefficients
     updatePeakFilter(chainSettings);
 
 
@@ -423,6 +423,8 @@ void SimplyQueueAudioProcessor::setStateInformation (const void* data, int sizeI
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
 {
     ChainSettings settings;
+    
+    // Gets settings in the range we have defined the sliders. For normalised values, use apvts.getParameter()
     settings.lowCutFreq = apvts.getRawParameterValue("Low-Cut Freq")->load();
     settings.highCutFreq = apvts.getRawParameterValue("High-Cut Freq")->load();
     settings.peakFreq = apvts.getRawParameterValue("Peak Freq")->load();
