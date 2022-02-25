@@ -296,7 +296,7 @@ void SimplyQueueAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
 
     
     
-    
+    // TODO: remove code after test
     
 //    // Init right low cut filter chain
 //    auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
