@@ -475,7 +475,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimplyQueueAudioProcessor::c
     
     layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Freq", "Peak Freq", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0, 0.25f), 750.0f));
     
-    layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Gain", "Peak Gain", juce::NormalisableRange<float>(-24.0f, 24.0f, 0.5f, 0.25f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Gain", "Peak Gain", juce::NormalisableRange<float>(-24.0f, 24.0f, 0.5f, 0.25f), 0.0f)); // Norma range 0.5 = change of half of a decibel
     
     layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Q", "Peak Q", juce::NormalisableRange<float>(0.1f, 10.0f, 0.05f, 0.25f), 1.0f));
     
@@ -489,8 +489,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimplyQueueAudioProcessor::c
         dbStringArray.add(str);
     }
     
+    // Choice of slopes for the LPF
     layout.add(std::make_unique<juce::AudioParameterChoice>("Low-Cut Slope", "Low-Cut Slope", dbStringArray, 0));
     
+    // Choice of slopes for the HPF
     layout.add(std::make_unique<juce::AudioParameterChoice>("High-Cut Slope", "High-Cut Slope", dbStringArray, 0));
     
     return layout;

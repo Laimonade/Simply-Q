@@ -85,6 +85,7 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout(); // Static as it doesn't use any member variable
     
     juce::AudioProcessorValueTreeState apvts {*this, nullptr, "Parameters", createParameterLayout()}; //Binding GUI control to the DSP in processor
+
 private:
     
     using Filter = juce::dsp::IIR::Filter<float>; // Creating a juce dsp filter 'type alias'
