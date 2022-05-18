@@ -113,8 +113,10 @@ private:
         HighCut
     };
     
-    
+    // Update peak filter with the chain settings
     void updatePeakFilter(const ChainSettings& chainSettings);
+    
+    // Juce coefficient Alias
     using Coefficients = Filter::CoefficientsPtr;
     
     // Helper function to update peak filter coefficients 
@@ -126,18 +128,15 @@ private:
                          const CoefficientType& cutCoefficients,
                          const SlopeSettings& lowCutSlope)
     {
-//        auto cutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
-//
-//        // Init low cut filter chain
-//        auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
         
         // Bypass all link in chain
         leftLowCut.template setBypassed<0>(true);
         leftLowCut.template setBypassed<1>(true);
         leftLowCut.template setBypassed<2>(true);
         leftLowCut.template setBypassed<3>(true);
-
-        switch ( lowCutSlope )
+        
+        // Need to explicitly state that they are templated like this
+        switch (lowCutSlope)
         {
             case Slope_12:
             {
@@ -145,7 +144,6 @@ private:
                 leftLowCut.template setBypassed<0>(false);
                 break;
             }
-                
             case Slope_24:
             {
                 *leftLowCut.template get<0>().coefficients = *cutCoefficients[0];
@@ -175,9 +173,7 @@ private:
                 leftLowCut.template setBypassed<2>(false);
                 leftLowCut.template setBypassed<3>(false);
                 break;
-
             }
-     
         }
     }
     
