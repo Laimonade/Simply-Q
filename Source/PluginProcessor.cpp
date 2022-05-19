@@ -206,12 +206,26 @@ void SimplyQueueAudioProcessor::getStateInformation (juce::MemoryBlock& destData
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    // The 'state' member is an instance (part of) the juce audio processor value tree state (apvts)
+    // We use a memory output stream to write (serialise) the apvts state to the memory block.
+    
+    juce::MemoryOutputStream mos(destData, true);
+    apvts.state.writeToStream(mos);
 }
 
 void SimplyQueueAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    // Restore parameters from apvts using a helper function
+    
+    // Checking if state is valid before using it as plugin state
+    auto tree = juce::ValueTree::readFromData(data, sizeInBytes);
+    if(tree.isValid())
+    {
+        apvts.replaceState(tree);
+        updateFilters();
+    }
 }
 
 // Getting the parameter's values using the ChainSettings structure
