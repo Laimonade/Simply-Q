@@ -115,18 +115,32 @@ void SimplyQueueAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Updating the peak filter coefficients
     updatePeakFilter(chainSettings);
     
-    // Creates 1 IIR filter coefficient object for every 2 orders
-    // If 12db selected = order of 2 (1 coefficient), If 48db selected = order of 8 (4 coefficients = 4 filter of 12db activated)
-    // dB slope choice [0,1,2,3] --> +1 * 2 --> [2, 4, 6, 8]
-    auto cutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, sampleRate, (chainSettings.lowCutSlope + 1) * 2);
+    /* Creates 1 IIR filter coefficient object for every 2 orders
+       If 12db selected = order of 2 (1 coefficient), If 48db selected = order of 8 (4 coefficients = 4 filter of 12db activated)
+       dB slope choice [0,1,2,3] --> +1 * 2 --> [2, 4, 6, 8] */
+    
+    // High pass / low cut filter
+    auto lowCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, sampleRate, (chainSettings.lowCutSlope + 1) * 2);
     
     // Init low cut filter chain
     auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
     auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
     
     // Updating the cut filter DSP from the GUI settings
-    updateCutFilter(leftLowCut, cutCoefficients, chainSettings.lowCutSlope);
-    updateCutFilter(rightLowCut, cutCoefficients, chainSettings.lowCutSlope);
+    updateCutFilter(leftLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
+    updateCutFilter(rightLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
+    
+    // Low pass / high cut filter
+    auto highCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq, sampleRate, (chainSettings.highCutSlope + 1) * 2);
+    
+    // Init high cut filter chain
+    auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();
+    auto& rightHighCut = rightChain.get<ChainPositions::HighCut>();
+    
+    // Updating the cut filter DSP from the GUI settings
+    updateCutFilter(leftHighCut, highCutCoefficients, chainSettings.highCutSlope);
+    updateCutFilter(rightHighCut, highCutCoefficients, chainSettings.highCutSlope);
+    
 }
 
 void SimplyQueueAudioProcessor::releaseResources()
@@ -185,17 +199,28 @@ void SimplyQueueAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     // Using helper function of the struct getChainSettings
     auto chainSettings = getChainSettings(apvts);
     
+    updatePeakFilter(chainSettings);
+   
+    auto lowCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
+    
     // Init right low cut filter chain
     auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
     auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
-   
-    auto cutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
-
-    updatePeakFilter(chainSettings);
     
-    updateCutFilter(leftLowCut, cutCoefficients, chainSettings.lowCutSlope);
-    updateCutFilter(rightLowCut, cutCoefficients, chainSettings.lowCutSlope);
+    updateCutFilter(leftLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
+    updateCutFilter(rightLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
 
+    // Low pass / high cut filter
+    auto highCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq, getSampleRate(), (chainSettings.highCutSlope + 1) * 2);
+    
+    // Init high cut filter chain
+    auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();
+    auto& rightHighCut = rightChain.get<ChainPositions::HighCut>();
+    
+    // Updating the cut filter DSP from the GUI settings
+    updateCutFilter(leftHighCut, highCutCoefficients, chainSettings.highCutSlope);
+    updateCutFilter(rightHighCut, highCutCoefficients, chainSettings.highCutSlope);
+    
     // Processor chain needs a processing context to be passed to it in order to run the audio through the links in the chain.
     // We supply this context using an audio block instance
     
@@ -213,14 +238,6 @@ void SimplyQueueAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     // Process current block using the filters
     leftChain.process(leftContext);
     rightChain.process(rightContext);
-    
-//    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-//    {
-//
-//        auto* channelData = buffer.getWritePointer (channel);
-//
-//        // ..do something to the data...
-//    }
 }
 
 //==============================================================================
@@ -327,7 +344,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimplyQueueAudioProcessor::c
     layout.add(std::make_unique<juce::AudioParameterChoice>("High-Cut Slope", "High-Cut Slope", dbStringArray, 0));
     
     return layout;
- 
 }
 
 
