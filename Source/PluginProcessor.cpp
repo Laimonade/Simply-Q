@@ -109,38 +109,8 @@ void SimplyQueueAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     leftChain.prepare(spec);
     rightChain.prepare(spec);
     
-    // Using helper function of the struct getChainSettings
-    auto chainSettings = getChainSettings(apvts);
-    
-    // Updating the peak filter coefficients
-    updatePeakFilter(chainSettings);
-    
-    /* Creates 1 IIR filter coefficient object for every 2 orders
-       If 12db selected = order of 2 (1 coefficient), If 48db selected = order of 8 (4 coefficients = 4 filter of 12db activated)
-       dB slope choice [0,1,2,3] --> +1 * 2 --> [2, 4, 6, 8] */
-    
-    // High pass / low cut filter
-    auto lowCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, sampleRate, (chainSettings.lowCutSlope + 1) * 2);
-    
-    // Init low cut filter chain
-    auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
-    auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
-    
-    // Updating the cut filter DSP from the GUI settings
-    updateCutFilter(leftLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
-    updateCutFilter(rightLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
-    
-    // Low pass / high cut filter
-    auto highCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq, sampleRate, (chainSettings.highCutSlope + 1) * 2);
-    
-    // Init high cut filter chain
-    auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();
-    auto& rightHighCut = rightChain.get<ChainPositions::HighCut>();
-    
-    // Updating the cut filter DSP from the GUI settings
-    updateCutFilter(leftHighCut, highCutCoefficients, chainSettings.highCutSlope);
-    updateCutFilter(rightHighCut, highCutCoefficients, chainSettings.highCutSlope);
-    
+    // Update each filters using helper function
+    updateFilters();
 }
 
 void SimplyQueueAudioProcessor::releaseResources()
@@ -196,33 +166,11 @@ void SimplyQueueAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     //                 Check 'PrepareToPlay' for same code with explaination
     // ------------------------------------------------------------------------------------
     
-    // Using helper function of the struct getChainSettings
-    auto chainSettings = getChainSettings(apvts);
+    // Update each filters using helper function
+    updateFilters();
     
-    updatePeakFilter(chainSettings);
-   
-    auto lowCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
-    
-    // Init right low cut filter chain
-    auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
-    auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
-    
-    updateCutFilter(leftLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
-    updateCutFilter(rightLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
-
-    // Low pass / high cut filter
-    auto highCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq, getSampleRate(), (chainSettings.highCutSlope + 1) * 2);
-    
-    // Init high cut filter chain
-    auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();
-    auto& rightHighCut = rightChain.get<ChainPositions::HighCut>();
-    
-    // Updating the cut filter DSP from the GUI settings
-    updateCutFilter(leftHighCut, highCutCoefficients, chainSettings.highCutSlope);
-    updateCutFilter(rightHighCut, highCutCoefficients, chainSettings.highCutSlope);
-    
-    // Processor chain needs a processing context to be passed to it in order to run the audio through the links in the chain.
-    // We supply this context using an audio block instance
+    /* Processor chain needs a processing context to be passed to it in order to run the audio through the links in the chain.
+    // We supply this context using an audio block instance */
     
     // Create an audio block from the current buffer
     juce::dsp::AudioBlock<float> block(buffer);
@@ -283,6 +231,14 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
     return settings;
 }
 
+// Getting the coefficients from above (left/rightChain.get), so we dereference
+void SimplyQueueAudioProcessor::updateCoefficients(Coefficients& old, const Coefficients& replacements)
+{
+    // Reference counted objects allocated on the heap, so we need to dereference them to get underlying object
+    *old = *replacements;
+}
+
+
 void SimplyQueueAudioProcessor::updatePeakFilter(const ChainSettings& chainSettings)
 {
     
@@ -291,7 +247,6 @@ void SimplyQueueAudioProcessor::updatePeakFilter(const ChainSettings& chainSetti
                                                                                 chainSettings.peakFreq,
                                                                                 chainSettings.peakQuality,
                                                                                 juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
-    
     // ------------------------------------------------------------------------------------
     // Access peak filter link and assign some coefficients
     // PeakCoefficient object is a Reference-counted wrapper of an array allocated on the heap.
@@ -305,11 +260,49 @@ void SimplyQueueAudioProcessor::updatePeakFilter(const ChainSettings& chainSetti
     updateCoefficients(rightChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
 }
 
-// Getting the coefficients from above (left/rightChain.get), so we dereference
-void SimplyQueueAudioProcessor::updateCoefficients(Coefficients& old, const Coefficients& replacements)
+
+void SimplyQueueAudioProcessor::updateLowCutFilters(const ChainSettings& chainSettings)
 {
-    // Reference counted objects allocated on the heap, so we need to dereference them to get underlying object
-    *old = *replacements;
+    // ------------------------------------------------------------------------------------
+    // Creates 1 IIR filter coefficient object for every 2 orders
+    // If 12db selected = order of 2 (1 coefficient), If 48db selected = order of 8 (4 coefficients = 4 filter of 12db activated)
+    // dB slope choice [0,1,2,3] --> +1 * 2 --> [2, 4, 6, 8]
+    // ------------------------------------------------------------------------------------
+    
+    auto lowCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
+    
+    // Init right low cut filter chain
+    auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
+    auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
+    
+    updateCutFilter(leftLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
+    updateCutFilter(rightLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
+}
+
+void SimplyQueueAudioProcessor::updateHighCutFilters(const ChainSettings& chainSettings)
+{
+    // Low pass / high cut filter
+    auto highCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq, getSampleRate(), (chainSettings.highCutSlope + 1) * 2);
+    
+    // Init high cut filter chain
+    auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();
+    auto& rightHighCut = rightChain.get<ChainPositions::HighCut>();
+    
+    // Updating the cut filter DSP from the GUI settings
+    updateCutFilter(leftHighCut, highCutCoefficients, chainSettings.highCutSlope);
+    updateCutFilter(rightHighCut, highCutCoefficients, chainSettings.highCutSlope);
+}
+
+// Function updating all the filters
+void SimplyQueueAudioProcessor::updateFilters()
+{
+    // Using helper function of the struct getChainSettings
+    auto chainSettings = getChainSettings(apvts);
+    
+    // Updating all filters from the GUI parameters
+    updateLowCutFilters(chainSettings);
+    updateHighCutFilters(chainSettings);
+    updatePeakFilter(chainSettings);
 }
 
 
