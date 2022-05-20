@@ -15,7 +15,14 @@ SimplyQueueAudioProcessorEditor::SimplyQueueAudioProcessorEditor (SimplyQueueAud
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (400, 300);
+    
+    for (auto* sliders : getSliders())
+    {
+        addAndMakeVisible(sliders);
+    }
+    
+    
+    setSize (600, 400);
 }
 
 SimplyQueueAudioProcessorEditor::~SimplyQueueAudioProcessorEditor()
@@ -30,10 +37,46 @@ void SimplyQueueAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setColour (juce::Colours::white);
     g.setFont (15.0f);
+    g.drawFittedText("Let's queue together", getLocalBounds(), juce::Justification::centred, 1);
 }
 
 void SimplyQueueAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
+    
+    auto bounds = getLocalBounds();
+    
+    // Top 1/3 or display: response of EQ
+    auto responseArea = bounds.removeFromTop(bounds.getHeight() * 0.33);
+    
+    // 1/3 of the display on left
+    auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
+    // 1/3 of display right (width = 2/3, so * 0.5 = 1/3)
+    auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.5);
+    
+    lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.5));
+    lowCutSlopeSlider.setBounds(lowCutArea);
+    
+    highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.5));
+    highCutSlopeSlider.setBounds(highCutArea);
+    
+    peakFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.33));
+    peakGainSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.5));
+    peakQSlider.setBounds(bounds);
+    
+}
+
+std::vector<juce::Component*> SimplyQueueAudioProcessorEditor::getSliders()
+{
+    return
+    {
+        &peakQSlider,
+        &peakGainSlider,
+        &peakFreqSlider,
+        &lowCutFreqSlider,
+        &highCutFreqSlider,
+        &lowCutSlopeSlider,
+        &highCutSlopeSlider
+    };
 }
