@@ -245,13 +245,6 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
     return settings;
 }
 
-// Getting the coefficients from above (left/rightChain.get), so we dereference
-void updateCoefficients(Coefficients& old, const Coefficients& replacements)
-{
-    // Reference counted objects allocated on the heap, so we need to dereference them to get underlying object
-    *old = *replacements;
-}
-
 // Free function (non-member function)
 Coefficients makePeakFilter(const ChainSettings& chainSettings, double sampleRate)
 {
@@ -279,6 +272,12 @@ void SimplyQueueAudioProcessor::updatePeakFilter(const ChainSettings& chainSetti
     updateCoefficients(rightChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
 }
 
+// Getting the coefficients from above (left/rightChain.get), so we dereference
+void updateCoefficients(Coefficients& old, const Coefficients& replacements)
+{
+    // Reference counted objects allocated on the heap, so we need to dereference them to get underlying object
+    *old = *replacements;
+}
 
 void SimplyQueueAudioProcessor::updateLowCutFilters(const ChainSettings& chainSettings)
 {

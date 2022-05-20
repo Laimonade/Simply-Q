@@ -64,7 +64,7 @@ using Coefficients = Filter::CoefficientsPtr;
 // Helper function to update peak filter coefficients
 void updateCoefficients(Coefficients& old, const Coefficients& replacements);
 
-Coefficients makePeakFilter(ChainSettings& chainSettings, double sampleRate);
+Coefficients makePeakFilter(const ChainSettings& chainSettings, double sampleRate);
 
 //==============================================================================
 /**
@@ -127,12 +127,6 @@ private:
     
     // Update peak filter with the chain settings
     void updatePeakFilter(const ChainSettings& chainSettings);
-    
-    // Juce coefficient Alias
-    using Coefficients = Filter::CoefficientsPtr;
-    
-    // Helper function to update peak filter coefficients 
-    static void updateCoefficients(Coefficients& old, const Coefficients& replacements);
     
     // Template function
     template<int Index, typename ChainType, typename CoefficientType>

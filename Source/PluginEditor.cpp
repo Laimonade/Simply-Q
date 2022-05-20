@@ -30,12 +30,26 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "High-Cut Slope", highCutSlop
         addAndMakeVisible(sliders);
     }
     
+    // Now we can update any peak filter link with the chain settings, we need to listen when the parameters are being changed
+    // We grab all the parameters from the audio processor and add a listener to them.
+    const auto& parameters = audioProcessor.getParameters(); // returns an array of pointers
+    for (auto parameter : parameters)
+    {
+        parameter->addListener(this);
+    }
+    
+    startTimerHz(60);
     
     setSize (600, 400);
 }
 
 SimplyQueueAudioProcessorEditor::~SimplyQueueAudioProcessorEditor()
 {
+    const auto& parameters = audioProcessor.getParameters(); // returns an array of pointers
+    for (auto parameter : parameters)
+    {
+        parameter->removeListener(this);
+    }
 }
 
 //==============================================================================
@@ -171,6 +185,10 @@ void SimplyQueueAudioProcessorEditor::timerCallback()
     if(parametersChanged.compareAndSetBool(false, true))
     {
         // Update mono chain, signal repaint
+        auto chainSettings = getChainSettings(audioProcessor.apvts);
+        auto peakCoefficients = makePeakFilter(chainSettings, audioProcessor.getSampleRate());
+        updateCoefficients(monoChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
+        repaint();
         // Mono chain from apvts is private so we need to add 'free' functions
         
         parametersChanged.set(false);
