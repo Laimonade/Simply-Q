@@ -37,6 +37,26 @@ struct ChainSettings
 // Helper function giving all the values to the data struct above
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
 
+using Filter = juce::dsp::IIR::Filter<float>; // Creating a juce dsp filter 'type alias'
+
+// We want cutfilter to have a max of 48db reponse. Each filter are 12db response, so we need to
+// 'side-chain' 4 of them to obtain this selectable 12db-48db. We do this using a processor chain.
+// We pass the processor a single context (audio samples) for the 4 filters.
+using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
+
+// Mono chain: Low cut --> Parametric --> High cut
+// We create a mono chain by having 2 cut filters for the low&high cut
+// and a normal filter for parametric
+using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
+
+// Enum representing each filter in the chain. Goes along with the MonoChain above defining each:
+// cut filter, filter, cut filter
+enum ChainPositions
+{
+    LowCut,
+    Peak,
+    HighCut
+};
 
 //==============================================================================
 /**
@@ -89,29 +109,8 @@ public:
 
 private:
     
-    using Filter = juce::dsp::IIR::Filter<float>; // Creating a juce dsp filter 'type alias'
-    
-    // We want cutfilter to have a max of 48db reponse. Each filter are 12db response, so we need to
-    // 'side-chain' 4 of them to obtain this selectable 12db-48db. We do this using a processor chain.
-    // We pass the processor a single context (audio samples) for the 4 filters.
-    using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
-    
-    // Mono chain: Low cut --> Parametric --> High cut
-    // We create a mono chain by having 2 cut filters for the low&high cut
-    // and a normal filter for parametric
-    using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
-    
     // Creating 2 mono chain for stereo processing
     MonoChain leftChain, rightChain;
-    
-    // Enum representing each filter in the chain. Goes along with the MonoChain above defining each:
-    // cut filter, filter, cut filter
-    enum ChainPositions
-    {
-        LowCut,
-        Peak,
-        HighCut
-    };
     
     // Update peak filter with the chain settings
     void updatePeakFilter(const ChainSettings& chainSettings);

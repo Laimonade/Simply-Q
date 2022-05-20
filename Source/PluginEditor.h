@@ -61,6 +61,9 @@ private:
     lowCutSlopeSliderAttachment,
     highCutSlopeSliderAttachment;
     
+    // Using an instance of monochain used in audio processor, to update reponse curve
+    MonoChain monoChain;
+    
     // Vectorise sliders for each of access
     std::vector<juce::Component*> getSliders();
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimplyQueueAudioProcessorEditor)
