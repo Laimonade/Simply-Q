@@ -58,6 +58,14 @@ enum ChainPositions
     HighCut
 };
 
+// Juce coefficient Alias
+using Coefficients = Filter::CoefficientsPtr;
+
+// Helper function to update peak filter coefficients
+void updateCoefficients(Coefficients& old, const Coefficients& replacements);
+
+Coefficients makePeakFilter(ChainSettings& chainSettings, double sampleRate);
+
 //==============================================================================
 /**
 */
@@ -111,6 +119,11 @@ private:
     
     // Creating 2 mono chain for stereo processing
     MonoChain leftChain, rightChain;
+    
+    // -------------------------------------------------------------------------------------------------------
+    // All of these update functions needs to be made as 'free' functions to be utilised by the plugin editor.
+    // If they use member variables, they need to become function arguments
+    // -------------------------------------------------------------------------------------------------------
     
     // Update peak filter with the chain settings
     void updatePeakFilter(const ChainSettings& chainSettings);

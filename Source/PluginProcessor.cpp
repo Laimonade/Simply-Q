@@ -246,21 +246,26 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
 }
 
 // Getting the coefficients from above (left/rightChain.get), so we dereference
-void SimplyQueueAudioProcessor::updateCoefficients(Coefficients& old, const Coefficients& replacements)
+void updateCoefficients(Coefficients& old, const Coefficients& replacements)
 {
     // Reference counted objects allocated on the heap, so we need to dereference them to get underlying object
     *old = *replacements;
 }
 
+// Free function (non-member function)
+Coefficients makePeakFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate,
+                                                               chainSettings.peakFreq,
+                                                               chainSettings.peakQuality,
+                                                               juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
+}
+
 
 void SimplyQueueAudioProcessor::updatePeakFilter(const ChainSettings& chainSettings)
 {
+    auto peakCoefficients = makePeakFilter(chainSettings, getSampleRate());
     
-    // Produce coefficients from the IIR DSP class for the GUI user helper function chainSettings
-    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(),
-                                                                                chainSettings.peakFreq,
-                                                                                chainSettings.peakQuality,
-                                                                                juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
     // ------------------------------------------------------------------------------------
     // Access peak filter link and assign some coefficients
     // PeakCoefficient object is a Reference-counted wrapper of an array allocated on the heap.
