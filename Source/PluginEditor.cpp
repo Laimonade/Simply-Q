@@ -11,7 +11,16 @@
 
 //==============================================================================
 SimplyQueueAudioProcessorEditor::SimplyQueueAudioProcessorEditor (SimplyQueueAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p), audioProcessor (p),
+// TODO: Use an enum/look up table instead of using raw names (allows to iterates through it)
+lowCutFreqSliderAttachment(audioProcessor.apvts, "Low-Cut Freq", lowCutFreqSlider),
+highCutFreqSliderAttachment(audioProcessor.apvts, "High-Cut Freq", highCutFreqSlider),
+peakFreqSliderAttachment(audioProcessor.apvts, "Peak Freq", peakFreqSlider),
+peakGainSliderAttachment(audioProcessor.apvts, "Peak Gain", peakGainSlider),
+peakQSliderAttachment(audioProcessor.apvts, "Peak Q", peakQSlider),
+lowCutSlopeSliderAttachment(audioProcessor.apvts, "Low-Cut Slope", lowCutSlopeSlider),
+highCutSlopeSliderAttachment(audioProcessor.apvts, "High-Cut Slope", highCutSlopeSlider)
+
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -71,11 +80,11 @@ std::vector<juce::Component*> SimplyQueueAudioProcessorEditor::getSliders()
 {
     return
     {
-        &peakQSlider,
-        &peakGainSlider,
-        &peakFreqSlider,
         &lowCutFreqSlider,
         &highCutFreqSlider,
+        &peakFreqSlider,
+        &peakGainSlider,
+        &peakQSlider,
         &lowCutSlopeSlider,
         &highCutSlopeSlider
     };

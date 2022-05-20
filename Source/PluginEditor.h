@@ -40,13 +40,26 @@ private:
     SimplyQueueAudioProcessor& audioProcessor;
     
     // Adding sliders
-    CustomRotarySlider peakFreqSlider,
+    CustomRotarySlider lowCutFreqSlider,
+    highCutFreqSlider,
+    peakFreqSlider,
     peakGainSlider,
     peakQSlider,
-    lowCutFreqSlider,
-    highCutFreqSlider,
     lowCutSlopeSlider,
     highCutSlopeSlider;
+    
+    // apvts alias to connect GUI sliders to DSP
+    using APVTS = juce::AudioProcessorValueTreeState;
+    using Attachment = APVTS::SliderAttachment;
+    
+    // Creating 1 attachment for each slider
+    Attachment lowCutFreqSliderAttachment,
+    highCutFreqSliderAttachment,
+    peakFreqSliderAttachment,
+    peakGainSliderAttachment,
+    peakQSliderAttachment,
+    lowCutSlopeSliderAttachment,
+    highCutSlopeSliderAttachment;
     
     // Vectorise sliders for each of access
     std::vector<juce::Component*> getSliders();
