@@ -287,7 +287,7 @@ void SimplyQueueAudioProcessor::updateLowCutFilters(const ChainSettings& chainSe
     // dB slope choice [0,1,2,3] --> +1 * 2 --> [2, 4, 6, 8]
     // ------------------------------------------------------------------------------------
     
-    auto lowCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq, getSampleRate(), (chainSettings.lowCutSlope + 1) * 2);
+    auto lowCutCoefficients  = makeLowCutFilter(chainSettings, getSampleRate());
     
     // Init right low cut filter chain
     auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
@@ -300,7 +300,7 @@ void SimplyQueueAudioProcessor::updateLowCutFilters(const ChainSettings& chainSe
 void SimplyQueueAudioProcessor::updateHighCutFilters(const ChainSettings& chainSettings)
 {
     // Low pass / high cut filter
-    auto highCutCoefficients  = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq, getSampleRate(), (chainSettings.highCutSlope + 1) * 2);
+    auto highCutCoefficients  = makeHighCutFilter(chainSettings, getSampleRate());
     
     // Init high cut filter chain
     auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();

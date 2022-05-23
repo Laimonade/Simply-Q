@@ -45,6 +45,7 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "High-Cut Slope", highCutSlop
 
 SimplyQueueAudioProcessorEditor::~SimplyQueueAudioProcessorEditor()
 {
+    // De-register listeners
     const auto& parameters = audioProcessor.getParameters(); // returns an array of pointers
     for (auto parameter : parameters)
     {

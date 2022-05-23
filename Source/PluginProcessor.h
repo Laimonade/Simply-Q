@@ -58,6 +58,12 @@ enum ChainPositions
     HighCut
 };
 
+// -------------------------------------------------------------------------------------------------------
+// All of these update functions are public as 'free' functions, to be utilised by the plugin editor.
+// --> If they use member variables, they need to become function arguments.
+// -------------------------------------------------------------------------------------------------------
+
+
 // Juce coefficient Alias
 using Coefficients = Filter::CoefficientsPtr;
 
@@ -65,6 +71,64 @@ using Coefficients = Filter::CoefficientsPtr;
 void updateCoefficients(Coefficients& old, const Coefficients& replacements);
 
 Coefficients makePeakFilter(const ChainSettings& chainSettings, double sampleRate);
+
+// Template function
+template<int Index, typename ChainType, typename CoefficientType>
+void update(ChainType& chain, const CoefficientType& coefficients)
+{
+    updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
+    chain.template setBypassed<Index> (false);
+}
+
+// Low/high cut filter coefficient update
+template<typename ChainType, typename CoefficientType>
+void updateCutFilter(ChainType& leftLowCut,
+                     const CoefficientType& cutCoefficients,
+                     const SlopeSettings& lowCutSlope)
+{
+    
+    // Bypass all link in chain
+    leftLowCut.template setBypassed<0>(true);
+    leftLowCut.template setBypassed<1>(true);
+    leftLowCut.template setBypassed<2>(true);
+    leftLowCut.template setBypassed<3>(true);
+    
+    // Updates filter coefficients depending on which slope is selected
+    switch (lowCutSlope)
+    {
+        // Reversing case order and removing breaks to avoid duplicate code
+        case Slope_48:
+        {
+            update<3>(leftLowCut, cutCoefficients);
+        }
+        case Slope_36:
+        {
+            update<2>(leftLowCut, cutCoefficients);
+        }
+        case Slope_24:
+        {
+            update<1>(leftLowCut, cutCoefficients);
+        }
+        case Slope_12:
+        {
+            update<0>(leftLowCut, cutCoefficients);
+        }
+    }
+}
+
+inline auto makeLowCutFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq,
+                                                                                       sampleRate,
+                                                                                       (chainSettings.lowCutSlope + 1) * 2);
+}
+
+inline auto makeHighCutFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq,
+                                                                                      sampleRate,
+                                                                                      (chainSettings.highCutSlope + 1) * 2);
+}
 
 //==============================================================================
 /**
@@ -120,57 +184,8 @@ private:
     // Creating 2 mono chain for stereo processing
     MonoChain leftChain, rightChain;
     
-    // -------------------------------------------------------------------------------------------------------
-    // All of these update functions needs to be made as 'free' functions to be utilised by the plugin editor.
-    // If they use member variables, they need to become function arguments
-    // -------------------------------------------------------------------------------------------------------
-    
     // Update peak filter with the chain settings
     void updatePeakFilter(const ChainSettings& chainSettings);
-    
-    // Template function
-    template<int Index, typename ChainType, typename CoefficientType>
-    void update(ChainType& chain, const CoefficientType& coefficients)
-    {
-        updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
-        chain.template setBypassed<Index> (false);
-    }
-    
-    // Low/high cut filter coefficient update
-    template<typename ChainType, typename CoefficientType>
-    void updateCutFilter(ChainType& leftLowCut,
-                         const CoefficientType& cutCoefficients,
-                         const SlopeSettings& lowCutSlope)
-    {
-        
-        // Bypass all link in chain
-        leftLowCut.template setBypassed<0>(true);
-        leftLowCut.template setBypassed<1>(true);
-        leftLowCut.template setBypassed<2>(true);
-        leftLowCut.template setBypassed<3>(true);
-        
-        // Updates filter coefficients depending on which slope is selected
-        switch (lowCutSlope)
-        {
-            // Reversing case order and removing breaks to avoid duplicate code
-            case Slope_48:
-            {
-                update<3>(leftLowCut, cutCoefficients);
-            }
-            case Slope_36:
-            {
-                update<2>(leftLowCut, cutCoefficients);
-            }
-            case Slope_24:
-            {
-                update<1>(leftLowCut, cutCoefficients);
-            }
-            case Slope_12:
-            {
-                update<0>(leftLowCut, cutCoefficients);
-            }
-        }
-    }
     
     // Function update LPF / HPF
     void updateLowCutFilters(const ChainSettings& chainSettings);
