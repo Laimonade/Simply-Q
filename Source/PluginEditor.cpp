@@ -180,7 +180,7 @@ void SimplyQueueAudioProcessorEditor::parameterValueChanged(int parameterIndex, 
     // We set our atomic flag to true, triggering the GUI update
     parametersChanged.set(true);
 }
-
+// better
 void SimplyQueueAudioProcessorEditor::timerCallback()
 {
     if(parametersChanged.compareAndSetBool(false, true))
