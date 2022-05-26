@@ -105,13 +105,13 @@ void SimplyQueueAudioProcessorEditor::paint (juce::Graphics& g)
         
         // If high cut is bypassed, no need to do the computation
         if (!highcut.isBypassed<0>())
-            magnitude *= lowcut.get<0>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+            magnitude *= highcut.get<0>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
         if (!highcut.isBypassed<1>())
-            magnitude *= lowcut.get<1>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+            magnitude *= highcut.get<1>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
         if (!highcut.isBypassed<2>())
-            magnitude *= lowcut.get<2>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+            magnitude *= highcut.get<2>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
         if (!highcut.isBypassed<3>())
-            magnitude *= lowcut.get<3>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+            magnitude *= highcut.get<3>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
         
         // Convert magnitude into decibels and store it
         magnitudes[i] = Decibels::gainToDecibels(magnitude);
