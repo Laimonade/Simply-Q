@@ -17,24 +17,14 @@ struct CustomRotarySlider : juce::Slider
                                         juce::Slider::TextEntryBoxPosition::NoTextBox){}
 };
 
-
-//==============================================================================
-/**
-*/
-class SimplyQueueAudioProcessorEditor  : public juce::AudioProcessorEditor,
+struct ResponseCurveComponent: juce::Component,
 juce::AudioProcessorParameter::Listener,
 juce::Timer
 {
-public:
-    SimplyQueueAudioProcessorEditor (SimplyQueueAudioProcessor&);
-    ~SimplyQueueAudioProcessorEditor() override;
-
-    //==============================================================================
-    void paint (juce::Graphics&) override;
-    void resized() override;
+    ResponseCurveComponent(SimplyQueueAudioProcessor&);
+    ~ResponseCurveComponent();
     
     void parameterValueChanged (int parameterIndex, float newValue) override;
-
     /** Indicates that a parameter change gesture has started.
 
         E.g. if the user is dragging a slider, this would be called with gestureIsStarting
@@ -51,8 +41,6 @@ public:
     void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override {}
 
     void timerCallback() override;
-
-    //==============================================================================
     /** Starts the timer and sets the length of interval required.
 
         If the timer is already started, this will reset it, so the
@@ -63,13 +51,37 @@ public:
                                         than 1 will be rounded up to 1)
     */
     
+    void paint(juce::Graphics& g) override;
+
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
     SimplyQueueAudioProcessor& audioProcessor;
     
     juce::Atomic<bool> parametersChanged {false};
     
+    // Using an instance of monochain used in audio processor, to update reponse curve
+    MonoChain monoChain;
+
+};
+
+
+//==============================================================================
+/**
+*/
+class SimplyQueueAudioProcessorEditor  : public juce::AudioProcessorEditor
+{
+public:
+    SimplyQueueAudioProcessorEditor (SimplyQueueAudioProcessor&);
+    ~SimplyQueueAudioProcessorEditor() override;
+
+    //==============================================================================
+    void paint (juce::Graphics&) override;
+    void resized() override;
+    
+private:
+    // This reference is provided as a quick way for your editor to
+    // access the processor object that created it.
+    SimplyQueueAudioProcessor& audioProcessor;
+        
     // Adding sliders
     CustomRotarySlider lowCutFreqSlider,
     highCutFreqSlider,
@@ -78,6 +90,8 @@ private:
     peakQSlider,
     lowCutSlopeSlider,
     highCutSlopeSlider;
+    
+    ResponseCurveComponent responseCurveComponent;
     
     // apvts alias to connect GUI sliders to DSP
     using APVTS = juce::AudioProcessorValueTreeState;
@@ -91,9 +105,6 @@ private:
     peakQSliderAttachment,
     lowCutSlopeSliderAttachment,
     highCutSlopeSliderAttachment;
-    
-    // Using an instance of monochain used in audio processor, to update reponse curve
-    MonoChain monoChain;
     
     // Vectorise sliders for each of access
     std::vector<juce::Component*> getSliders();
